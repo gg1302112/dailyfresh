@@ -44,12 +44,13 @@
 			<div class="goods_num clearfix">
 				<div class="num_name fl">数 量：</div>
 				<div class="num_add fl">
-					<input type="text" class="num_show fl" value="1">
+                    {% csrf_token %}
+					<input type="text" sku_id="{{ sku.id }}" class="num_show fl" value="1">
 					<a href="javascript:;" class="add fr">+</a>
 					<a href="javascript:;" class="minus fr">-</a>	
 				</div> 
 			</div>
-			<div class="total">总价：<em>16.80元</em></div>
+			<div class="total">总价：<em>{{ sku.price }}元</em></div>
 			<div class="operate_btn">
 				<a href="javascript:;" class="buy_btn">立即购买</a>
 				<a href="javascript:;" class="add_cart" id="add_cart">加入购物车</a>				
@@ -95,27 +96,68 @@
 		</div>
 	</div>
     {% endblock body %}
-	<div class="add_jump"></div>
+    {% block bottom %}
+        <div class="add_jump"></div>
+    {% endblock bottom %}
+
     {% block bottomfiles %}
 	<script type="text/javascript" src="{% static 'js/jquery-1.12.4.min.js' %}"></script>
 	<script type="text/javascript">
-		var $add_x = $('#add_cart').offset().top;
-		var $add_y = $('#add_cart').offset().left;
+        // 更新总金额
+        function update_count_amount(){
+            count = $('.num_show').val()
+            price = $('.show_pirze').children('em').text()
+            count = parseInt(count)
+            price = parseFloat(price)
+            amount = count * price
+            $('.total').children('em').text(amount.toFixed(2)+'元')
 
-		var $to_x = $('#show_count').offset().top;
-		var $to_y = $('#show_count').offset().left;
+        }
 
-		$(".add_jump").css({'left':$add_y+80,'top':$add_x+10,'display':'block'})
+        // 点击+按钮
+        $('.add').click(function () {
+            count = $('.num_show').val()
+            count = parseInt(count) + 1
+            $('.num_show').val(count)
+            update_count_amount()
+        })
+
+        // 点击-按钮
+        $('.minus').click(function(){
+            count = $('.num_show').val()
+            count = parseInt(count) - 1
+            if(count<=0){
+                count = 1
+            }
+            $('.num_show').val(count)
+            update_count_amount()
+        })
+
+        // 手动输入
+        $('.num_show').blur(function () {
+            count = $(this).val()
+            if (isNaN(count) || count.trim().length==0 || parseInt(count)<=0) {
+                count = 1
+                $(this).val(count)
+            }
+            update_count_amount()
+        })
+
 		$('#add_cart').click(function(){
-			$(".add_jump").stop().animate({
-				'left': $to_y+7,
-				'top': $to_x+7},
-				"fast", function() {
-					$(".add_jump").fadeOut('fast',function(){
-						$('#show_count').html(2);
-					});
+		     // 获取数据
+             count = $('.num_show').val()
+             sku_id = $('.num_show').attr('sku_id')
+             csrf = $('input[name="csrfmiddlewaretoken"]').val()
+             params = {'count': count, 'sku_id': sku_id, 'csrfmiddlewaretoken': csrf}
+             $.post('/cart/add', params, function (data) {
+                 if (data.res == 5) {
+                     $('#show_count').html(data.cart_count);
+                 }
+                 else{
+                     alert(data.errmsg)
+                 }
+             })
+        })
 
-			});
-		})
 	</script>
 	{% endblock bottomfiles %}
