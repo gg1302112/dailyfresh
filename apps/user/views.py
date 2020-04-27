@@ -4,6 +4,7 @@ from django.views.generic import View
 from django.contrib.auth import authenticate, login, logout
 from .models import User, Address
 from goods.models import GoodsSKU
+from order.models import OrderInfo, OrderGoods
 from django.http import HttpResponse
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired
@@ -199,8 +200,11 @@ class UserinfoView(LoginRequireMixin, View):
 
 class UserorderView(LoginRequireMixin, View):
     """订单信息视图"""
-    def get(self, request):
+    def get(self, request, page):
         """订单信息页面"""
+        user = request.user
+        orders = OrderInfo.objects.get(user=user)
+
         return render(request, 'user_center_order.html', {'page': 'order'})
 
 
